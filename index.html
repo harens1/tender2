@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>सार्वजनिक निर्माण कार्य व्यवस्थापन प्रणाली</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- प्रमाणीकरण फारम -->
+    <div id="auth-container" class="auth-container">
+        <div class="auth-box">
+            <div class="auth-header">
+                <i class="fas fa-hard-hat"></i>
+                <h2>सार्वजनिक निर्माण कार्य प्रबन्धन</h2>
+                <p>प्रणालीमा स्वागत छ</p>
+            </div>
+            <form id="login-form" class="auth-form">
+                <div class="form-group">
+                    <label for="password"><i class="fas fa-key"></i> पासवर्ड प्रविष्ट गर्नुहोस्:</label>
+                    <input type="password" id="password" required placeholder="पासवर्ड..."
+                           onkeypress="if(event.key === 'Enter') document.getElementById('login-btn').click()">
+                </div>
+                <div class="form-group">
+                    <button type="button" id="login-btn" class="btn-primary">
+                        <i class="fas fa-sign-in-alt"></i> प्रवेश गर्नुहोस्
+                    </button>
+                </div>
+                <div id="auth-message" class="auth-message"></div>
+            </form>
+            <div class="auth-footer">
+                <p>पासवर्ड बाहिर देखाइँदैन। प्रशासन सेक्सनमा भिउ क्लिक गरेपछि मात्र हेर्न मिल्छ।</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- मुख्य एप्लिकेसन कन्टेनर (प्रारम्भमा लुकाइएको) -->
+    <div id="app-container" class="app-container hidden">
+        <!-- हेडर -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="logo">
+                    <i class="fas fa-building"></i>
+                    <span>निर्माण प्रबन्धन</span>
+                </div>
+                <div class="user-info">
+                    <i class="fas fa-user"></i>
+                    <span id="user-role">यूजर</span>
+                </div>
+            </div>
+            <div class="header-right">
+                <button id="notifications-btn" class="btn-icon">
+                    <i class="fas fa-bell"></i>
+                    <span id="notification-count" class="notification-badge hidden">0</span>
+                </button>
+                <button id="change-password-btn" class="btn-secondary">
+                    <i class="fas fa-key"></i> पासवर्ड परिवर्तन
+                </button>
+                <button id="logout-btn" class="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i> निस्कनुहोस्
+                </button>
+            </div>
+        </header>
+
+        <!-- नोटिफिकेसन मोडल -->
+        <div id="notification-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-bell"></i> नोटिफिकेसनहरू</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div id="notifications-list" class="notifications-list">
+                        <!-- नोटिफिकेसनहरू यहाँ प्रदर्शित हुनेछन् -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="mark-all-read" class="btn-secondary">सबै पढिएको चिन्ह लगाउनुहोस्</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- पासवर्ड परिवर्तन मोडल -->
+        <div id="password-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3><i class="fas fa-key"></i> पासवर्ड परिवर्तन</h3>
+                    <button class="close-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="password-form">
+                        <div class="form-group">
+                            <label for="current-password">हालको पासवर्ड:</label>
+                            <input type="password" id="current-password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="new-password">नयाँ पासवर्ड:</label>
+                            <input type="password" id="new-password" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirm-password">नयाँ पासवर्ड पुष्टि गर्नुहोस्:</label>
+                            <input type="password" id="confirm-password" required>
+                        </div>
+                        <div id="password-message" class="message"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="save-password-btn" class="btn-primary">पासवर्ड परिवर्तन गर्नुहोस्</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- मुख्य सामग्री -->
+        <main class="app-main">
+            <div class="sidebar">
+                <nav class="sidebar-nav">
+                    <button class="nav-btn active" data-section="dashboard">
+                        <i class="fas fa-tachometer-alt"></i> ड्याशबोर्ड
+                    </button>
+                    <button class="nav-btn" data-section="add-work">
+                        <i class="fas fa-plus-circle"></i> नयाँ कार्य थप्नुहोस्
+                    </button>
+                    <button class="nav-btn" data-section="view-works">
+                        <i class="fas fa-list"></i> कार्यहरू हेर्नुहोस्
+                    </button>
+                    <button class="nav-btn" data-section="search">
+                        <i class="fas fa-search"></i> खोजी गर्नुहोस्
+                    </button>
+                    <button class="nav-btn" data-section="reports">
+                        <i class="fas fa-chart-bar"></i> रिपोर्टहरू
+                    </button>
+                    <button class="nav-btn admin-only" data-section="admin">
+                        <i class="fas fa-user-cog"></i> प्रशासन
+                    </button>
+                </nav>
+            </div>
+
+            <div class="content">
+                <!-- ड्याशबोर्ड सेक्सन -->
+                <section id="dashboard-section" class="section active">
+                    <div class="section-header">
+                        <h2><i class="fas fa-tachometer-alt"></i> ड्याशबोर्ड</h2>
+                        <p>सार्वजनिक निर्माण कार्यहरूको सिंहावलोकन</p>
+                        <div class="today-date"><strong>आजको मिति:</strong> <span id="today-date-ad"></span> | <span id="today-date-bs"></span></div>
+                    </div>
+                    
+                    <div class="dashboard-cards">
+                        <div class="card">
+                            <div class="card-icon">
+                                <i class="fas fa-hard-hat"></i>
+                            </div>
+                            <div class="card-content">
+                                <h3>कुल कार्यहरू</h3>
+                                <p id="total-works">0</p>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="card-content">
+                                <h3>म्याद नजिकिँदै</h3>
+                                <p id="expiring-works">0</p>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <div class="card-content">
+                                <h3>सम्पन्न कार्यहरू</h3>
+                                <p id="completed-works">0</p>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="card-content">
+                                <h3>नोटिफिकेसनहरू</h3>
+                                <p id="dashboard-notifications">0</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="recent-activities">
+                        <h3><i class="fas fa-history"></i> भर्खरको गतिविधिहरू</h3>
+                        <div id="activities-list" class="activities-list">
+                            <!-- गतिविधिहरू यहाँ प्रदर्शित हुनेछन् -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- नयाँ कार्य थप्ने सेक्सन -->
+                <section id="add-work-section" class="section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-plus-circle"></i> नयाँ निर्माण कार्य थप्नुहोस्</h2>
+                        <p>नयाँ सार्वजनिक निर्माण कार्यको विवरण भर्नुहोस्</p>
+                    </div>
+                    
+                    <form id="work-form" class="work-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="work-name">निर्माण कार्यको नाम <span class="required">*</span></label>
+                                <input type="text" id="work-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="work-site">निर्माण कार्यको साइट <span class="required">*</span></label>
+                                <input type="text" id="work-site" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="tender-amount">बोलपत्र रकम (रु.) <span class="required">*</span></label>
+                                <input type="number" id="tender-amount" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="vat-amount">भ्याट रकम (रु.)</label>
+                                <input type="number" id="vat-amount">
+                            </div>
+                        </div>
+                        
+                        <div class="section-subheader">
+                            <h4><i class="fas fa-user-tie"></i> ठेकेदारको विवरण</h4>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="contractor-name">ठेकेदारको नाम <span class="required">*</span></label>
+                                <input type="text" id="contractor-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="contractor-address">ठेगाना</label>
+                                <input type="text" id="contractor-address">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="contractor-phone">फोन नं.</label>
+                                <input type="tel" id="contractor-phone">
+                            </div>
+                            <div class="form-group">
+                                <label for="contractor-email">इमेल</label>
+                                <input type="email" id="contractor-email">
+                            </div>
+                        </div>
+                        
+                        <div class="section-subheader">
+                            <h4><i class="fas fa-calendar-alt"></i> समय सम्बन्धी विवरण</h4>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="tender-publish-date">टेन्डर प्रकासित मिति</label>
+                                <input type="date" id="tender-publish-date">
+                            </div>
+                            <div class="form-group">
+                                <label for="magazine-name">पत्रिकाको नाम</label>
+                                <input type="text" id="magazine-name">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="magazine-date">पत्रिकाको मिति</label>
+                                <input type="date" id="magazine-date">
+                            </div>
+                            <div class="form-group">
+                                <label for="pre-bid-meeting">प्रिबिड मिटिङ गते (YYYY-MM-DD)</label>
+                                <input type="date" id="pre-bid-meeting">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="tender-open-date">बोलपत्र खोलेको दिन</label>
+                                <input type="date" id="tender-open-date">
+                            </div>
+                            <div class="form-group">
+                                <label for="evaluation-report-date">मूल्याँकन प्रतिवेदन गते</label>
+                                <input type="date" id="evaluation-report-date">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="intent-letter-date">आशय पत्र सूचना गते</label>
+                                <input type="date" id="intent-letter-date">
+                            </div>
+                            <div class="form-group">
+                                <label for="agreement-date">समझौता मिति</label>
+                                <input type="date" id="agreement-date">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="work-start-date">कार्य शुरु मिति</label>
+                                <input type="date" id="work-start-date">
+                            </div>
+                            <div class="form-group">
+                                <label for="work-completion-date">कार्य सम्पन्न मिति <span class="required">*</span></label>
+                                <input type="date" id="work-completion-date" required>
+                            </div>
+                        </div>
+                        
+                        <div class="section-subheader">
+                            <h4><i class="fas fa-file-contract"></i> जमानत विवरण</h4>
+                        </div>
+                        
+                        <div class="guarantee-section">
+                            <div class="guarantee-item">
+                                <h5>कार्य सम्पादन जमानत</h5>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="work-guarantee-from">मिति देखि</label>
+                                        <input type="date" id="work-guarantee-from">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="work-guarantee-to">सम्म</label>
+                                        <input type="date" id="work-guarantee-to" readonly>
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="work-guarantee-amount">रु.</label>
+                                        <input type="number" id="work-guarantee-amount">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="work-guarantee-percent">प्रतिशत</label>
+                                        <input type="number" id="work-guarantee-percent">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="guarantee-item">
+                                <h5>अग्रिम पेश्की जमानत</h5>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="advance-guarantee-from">मिति देखि</label>
+                                        <input type="date" id="advance-guarantee-from">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="advance-guarantee-to">सम्म</label>
+                                        <input type="date" id="advance-guarantee-to">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="advance-guarantee-amount">रु.</label>
+                                        <input type="number" id="advance-guarantee-amount">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="advance-guarantee-percent">प्रतिशत</label>
+                                        <input type="number" id="advance-guarantee-percent">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="guarantee-item">
+                                <h5>अन्य पेश्की जमानत</h5>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="other-guarantee-from">मिति देखि</label>
+                                        <input type="date" id="other-guarantee-from">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="other-guarantee-to">सम्म</label>
+                                        <input type="date" id="other-guarantee-to">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="other-guarantee-amount">रु.</label>
+                                        <input type="number" id="other-guarantee-amount">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="other-guarantee-percent">प्रतिशत</label>
+                                        <input type="number" id="other-guarantee-percent">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="guarantee-item">
+                                <h5>बिमा जमानत</h5>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="insurance-from">मिति देखि</label>
+                                        <input type="date" id="insurance-from">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="insurance-to">सम्म</label>
+                                        <input type="date" id="insurance-to">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="insurance-amount">रु.</label>
+                                        <input type="number" id="insurance-amount">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="insurance-percent">प्रतिशत</label>
+                                        <input type="number" id="insurance-percent">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="section-subheader">
+                            <h4><i class="fas fa-truck-moving"></i> मोबिलाइजेशन</h4>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="first-mobilization-date">प्रथम मोबिलाइजेशन मिति</label>
+                                <input type="date" id="first-mobilization-date">
+                            </div>
+                            <div class="form-group">
+                                <label for="first-mobilization-amount">रकम</label>
+                                <input type="number" id="first-mobilization-amount">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="second-mobilization-date">दोस्रो मोबिलाइजेशन मिति</label>
+                                <input type="date" id="second-mobilization-date">
+                            </div>
+                            <div class="form-group">
+                                <label for="second-mobilization-amount">रकम</label>
+                                <input type="number" id="second-mobilization-amount">
+                            </div>
+                        </div>
+                        
+                        <div class="section-subheader">
+                            <h4><i class="fas fa-file-invoice-dollar"></i> बिल विवरण</h4>
+                            <button type="button" id="add-bill-btn" class="btn-secondary">
+                                <i class="fas fa-plus"></i> थप बिल थप्नुहोस्
+                            </button>
+                        </div>
+                        
+                        <div id="bills-container">
+                            <div class="bill-item" data-bill-index="1">
+                                <h5>प्रथम विल</h5>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>रकम</label>
+                                        <input type="number" class="bill-amount">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>भ्याट</label>
+                                        <input type="number" class="bill-vat">
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>टिडिएस</label>
+                                        <input type="number" class="bill-tds">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>निर्माण व्यवसायी फन्ड</label>
+                                        <input type="number" class="bill-contractor-fund">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>रिटेन्सन</label>
+                                        <input type="number" class="bill-retention">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="section-subheader">
+                            <h4><i class="fas fa-file-signature"></i> कार्य सम्पन्न विवरण</h4>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="work-accept-report">कार्य स्वीकार प्रतिवेदन</label>
+                                <input type="text" id="work-accept-report">
+                            </div>
+                            <div class="form-group">
+                                <label for="work-complete-report">कार्य सम्पन्न प्रतिवेदन</label>
+                                <input type="text" id="work-complete-report">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="plan-transfer">योजना हस्तान्तरण</label>
+                                <input type="text" id="plan-transfer">
+                            </div>
+                        </div>
+                        
+                        <div class="section-subheader">
+                            <h4><i class="fas fa-calendar-plus"></i> म्याद थप विवरण</h4>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="deadline-extension-date">म्याद थप गर्नु पर्ने भए २१ दिन अगाडिको मिति</label>
+                                <input type="date" id="deadline-extension-date">
+                            </div>
+                            <div class="form-group">
+                                <label for="extension-submit-date">म्याद थपलाइ पेश गरेको मिति</label>
+                                <input type="date" id="extension-submit-date">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="extension-decision-date">म्याद थप गर्ने निर्णय मिति</label>
+                                <input type="date" id="extension-decision-date">
+                            </div>
+                            <div class="form-group">
+                                <label for="extension-authority">निकाय/अधिकारी</label>
+                                <input type="text" id="extension-authority">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="extension-period">म्याद थप अवधि (दिन)</label>
+                                <input type="number" id="extension-period" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="extension-final-date">कुन मिति सम्म</label>
+                                <input type="date" id="extension-final-date" readonly>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="insurance-extension">बिमा अवधि (थप अवधि जोडेर)</label>
+                                <input type="date" id="insurance-extension" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="apg-date">एपिजी मिति</label>
+                                <input type="date" id="apg-date">
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" id="save-work-btn" class="btn-primary">
+                                <i class="fas fa-save"></i> कार्य सुरक्षित गर्नुहोस्
+                            </button>
+                            <button type="button" id="reset-form-btn" class="btn-secondary">
+                                <i class="fas fa-redo"></i> फारम रिसेट गर्नुहोस्
+                            </button>
+                        </div>
+                        
+                        <div id="form-message" class="message"></div>
+                    </form>
+                </section>
+
+                <!-- कार्यहरू हेर्ने सेक्सन -->
+                <section id="view-works-section" class="section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-list"></i> कार्यहरूको सूची</h2>
+                        <p>सबै सार्वजनिक निर्माण कार्यहरूको विवरण</p>
+                    </div>
+                    
+                    <div class="works-controls">
+                        <div class="search-box">
+                            <input type="text" id="works-search" placeholder="कार्य खोज्नुहोस्...">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <div class="filter-controls">
+                            <select id="works-filter">
+                                <option value="all">सबै कार्यहरू</option>
+                                <option value="active">सक्रिय कार्यहरू</option>
+                                <option value="completed">सम्पन्न कार्यहरू</option>
+                                <option value="expiring">म्याद नजिकिँदै</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="works-table-container">
+                        <table id="works-table" class="works-table">
+                            <thead>
+                                <tr>
+                                    <th>क्र.सं.</th>
+                                    <th>कार्यको नाम</th>
+                                    <th>ठेकेदार</th>
+                                    <th>बोलपत्र रकम</th>
+                                    <th>सम्पन्न मिति</th>
+                                    <th>स्थिति</th>
+                                    <th>कार्यहरू</th>
+                                </tr>
+                            </thead>
+                            <tbody id="works-table-body">
+                                <!-- कार्यहरू यहाँ प्रदर्शित हुनेछन् -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="no-works-message" class="empty-state hidden">
+                        <i class="fas fa-inbox"></i>
+                        <p>कुनै कार्यहरू फेला परेनन्</p>
+                    </div>
+                </section>
+
+                <!-- खोजी सेक्सन -->
+                <section id="search-section" class="section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-search"></i> कार्यहरू खोज्नुहोस्</h2>
+                        <p>विस्तृत खोजी विकल्पहरू प्रयोग गर्नुहोस्</p>
+                    </div>
+                    
+                    <div class="search-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="search-work-name">कार्यको नाम</label>
+                                <input type="text" id="search-work-name" placeholder="कार्यको नाम...">
+                            </div>
+                            <div class="form-group">
+                                <label for="search-contractor">ठेकेदारको नाम</label>
+                                <input type="text" id="search-contractor" placeholder="ठेकेदारको नाम...">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="search-site">कार्य साइट</label>
+                                <input type="text" id="search-site" placeholder="कार्य साइट...">
+                            </div>
+                            <div class="form-group">
+                                <label for="search-status">स्थिति</label>
+                                <select id="search-status">
+                                    <option value="">सबै</option>
+                                    <option value="active">सक्रिय</option>
+                                    <option value="completed">सम्पन्न</option>
+                                    <option value="upcoming">सुरु हुन बाँकी</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="search-date-from">मिति देखि</label>
+                                <input type="date" id="search-date-from">
+                            </div>
+                            <div class="form-group">
+                                <label for="search-date-to">मिति सम्म</label>
+                                <input type="date" id="search-date-to">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="search-amount-min">न्यूनतम रकम (रु.)</label>
+                                <input type="number" id="search-amount-min" placeholder="न्यूनतम">
+                            </div>
+                            <div class="form-group">
+                                <label for="search-amount-max">अधिकतम रकम (रु.)</label>
+                                <input type="number" id="search-amount-max" placeholder="अधिकतम">
+                            </div>
+                        </div>
+                        
+                        <div class="search-actions">
+                            <button type="button" id="search-btn" class="btn-primary">
+                                <i class="fas fa-search"></i> खोज्नुहोस्
+                            </button>
+                            <button type="button" id="clear-search-btn" class="btn-secondary">
+                                <i class="fas fa-eraser"></i> खाली गर्नुहोस्
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="search-results">
+                        <h3><i class="fas fa-search"></i> खोजी नतिजाहरू</h3>
+                        <div id="search-results-container" class="search-results-container">
+                            <!-- खोजी नतिजाहरू यहाँ प्रदर्शित हुनेछन् -->
+                        </div>
+                    </div>
+                </section>
+
+                <!-- रिपोर्ट सेक्सन -->
+                <section id="reports-section" class="section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-chart-bar"></i> रिपोर्टहरू</h2>
+                        <p>विविध प्रकारका रिपोर्टहरू जनरेट गर्नुहोस्</p>
+                    </div>
+                    
+                    <div class="reports-controls">
+                        <div class="report-type-selector">
+                            <button class="report-type-btn active" data-report="summary">सारांश रिपोर्ट</button>
+                            <button class="report-type-btn" data-report="financial">वित्तिय रिपोर्ट</button>
+                            <button class="report-type-btn" data-report="timeline">समयरेखा रिपोर्ट</button>
+                            <button class="report-type-btn" data-report="contractor">ठेकेदार रिपोर्ट</button>
+                        </div>
+                        
+                        <div class="report-actions">
+                            <button id="generate-report-btn" class="btn-primary">
+                                <i class="fas fa-file-pdf"></i> रिपोर्ट जनरेट गर्नुहोस्
+                            </button>
+                            <button id="export-data-btn" class="btn-secondary">
+                                <i class="fas fa-download"></i> डाटा निर्यात गर्नुहोस्
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="report-content">
+                        <div id="summary-report" class="report-section active">
+                            <h3>कार्यहरूको सारांश</h3>
+                            <div class="report-stats">
+                                <div class="stat-item">
+                                    <h4>कुल कार्यहरू</h4>
+                                    <p id="report-total-works">0</p>
+                                </div>
+                                <div class="stat-item">
+                                    <h4>कुल बोलपत्र रकम</h4>
+                                    <p id="report-total-amount">रु. 0</p>
+                                </div>
+                                <div class="stat-item">
+                                    <h4>सक्रिय कार्यहरू</h4>
+                                    <p id="report-active-works">0</p>
+                                </div>
+                                <div class="stat-item">
+                                    <h4>सम्पन्न कार्यहरू</h4>
+                                    <p id="report-completed-works">0</p>
+                                </div>
+                            </div>
+                            
+                            <div class="report-chart">
+                                <h4>कार्यहरूको स्थिति अनुसार वितरण</h4>
+                                <canvas id="status-chart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div id="financial-report" class="report-section">
+                            <h3>वित्तिय विवरण</h3>
+                            <div class="financial-summary">
+                                <!-- वित्तिय सारांश यहाँ प्रदर्शित हुनेछ -->
+                            </div>
+                        </div>
+                        
+                        <div id="timeline-report" class="report-section">
+                            <h3>समयरेखा रिपोर्ट</h3>
+                            <div class="timeline-content">
+                                <!-- समयरेखा विवरण यहाँ प्रदर्शित हुनेछ -->
+                            </div>
+                        </div>
+                        
+                        <div id="contractor-report" class="report-section">
+                            <h3>ठेकेदारहरूको विवरण</h3>
+                            <div class="contractor-list">
+                                <!-- ठेकेदारहरूको सूची यहाँ प्रदर्शित हुनेछ -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- प्रशासन सेक्सन -->
+                <section id="admin-section" class="section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-user-cog"></i> प्रशासन</h2>
+                        <p>प्रणाली सेटिङहरू र यूजर व्यवस्थापन</p>
+                    </div>
+                    
+                    <div class="admin-panel">
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <i class="fas fa-users-cog"></i>
+                                <h3>यूजर व्यवस्थापन</h3>
+                            </div>
+                            <div class="admin-card-body">
+                                <div class="form-group">
+                                    <label for="user-password">यूजर पासवर्ड परिवर्तन गर्नुहोस्:</label>
+                                    <div class="password-change-form">
+                                        <input type="password" id="user-password" placeholder="नयाँ यूजर पासवर्ड...">
+                                        <button type="button" id="update-user-password-btn" class="btn-primary">
+                                            <i class="fas fa-sync-alt"></i> अपडेट गर्नुहोस्
+                                        </button>
+                                    </div>
+                                    <p class="form-note">यूजर पासवर्ड परिवर्तन गर्दा सबै यूजरहरूको लागि लागू हुनेछ।</p>
+                                </div>
+                                <div class="admin-password-view">
+                                    <div class="form-row">
+                                        <div class="form-group">
+                                            <label>एडमिन पासवर्ड:</label>
+                                            <span id="admin-password-mask">********</span>
+                                            <button type="button" id="view-admin-password-btn" class="btn-secondary"><i class="fas fa-eye"></i> भिउ</button>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>यूजर पासवर्ड:</label>
+                                            <span id="user-password-mask">********</span>
+                                            <button type="button" id="view-user-password-btn" class="btn-secondary"><i class="fas fa-eye"></i> भिउ</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <i class="fas fa-database"></i>
+                                <h3>डाटा व्यवस्थापन</h3>
+                            </div>
+                            <div class="admin-card-body">
+                                <div class="data-actions">
+                                    <button id="backup-data-btn" class="btn-secondary">
+                                        <i class="fas fa-download"></i> डाटा ब्याकअप गर्नुहोस्
+                                    </button>
+                                    <button id="restore-data-btn" class="btn-secondary">
+                                        <i class="fas fa-upload"></i> डाटा पुनर्स्थापना गर्नुहोस्
+                                    </button>
+                                    <button id="clear-data-btn" class="btn-danger">
+                                        <i class="fas fa-trash"></i> सबै डाटा मेटाउनुहोस्
+                                    </button>
+                                </div>
+                                <p class="form-note">सावधानी: सबै डाटा मेटाउँदा पुन: प्राप्त गर्न सकिँदैन।</p>
+                            </div>
+                        </div>
+                        
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <i class="fas fa-bell"></i>
+                                <h3>नोटिफिकेसन सेटिङहरू</h3>
+                            </div>
+                            <div class="admin-card-body">
+                                <div class="form-group">
+                                    <label>
+                                        <input type="checkbox" id="notifications-enabled" checked>
+                                        नोटिफिकेसन सक्षम गर्नुहोस्
+                                    </label>
+                                </div>
+                                <div class="form-group">
+                                    <label>नोटिफिकेसन अगाडि (दिन):</label>
+                                    <input type="number" id="notification-days" min="1" max="30" value="30">
+                                </div>
+                                <div class="form-group">
+                                    <label>नोटिफिकेसन अन्तराल (दिन):</label>
+                                    <input type="number" id="notification-interval" min="1" max="7" value="7">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="admin-card">
+                            <div class="admin-card-header">
+                                <i class="fas fa-info-circle"></i>
+                                <h3>प्रणाली जानकारी</h3>
+                            </div>
+                            <div class="admin-card-body">
+                                <div class="system-info">
+                                    <p><strong>प्रणाली संस्करण:</strong> 1.0.0</p>
+                                    <p><strong>अन्तिम अपडेट:</strong> <span id="last-update-date">2024-01-01</span></p>
+                                    <p><strong>कुल डाटा प्रविष्टिहरू:</strong> <span id="total-data-entries">0</span></p>
+                                    <p><strong>भण्डारण प्रयोग:</strong> <span id="storage-usage">0 KB</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- फुटर -->
+        <footer class="app-footer">
+            <div class="footer-content">
+                <p>सार्वजनिक निर्माण कार्य व्यवस्थापन प्रणाली © <span id="current-year">2024</span></p>
+                <p>निर्माणकर्ता: H-Tech@2026</p>
+            </div>
+        </footer>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/calculations.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
