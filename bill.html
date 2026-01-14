@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ne">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>बिल व्यवस्थापन</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        .top-nav {
+            display: flex; gap: 10px; padding: 10px 20px; background: #f8f9fa; border-bottom: 1px solid #e5e7eb;
+        }
+        .top-nav a {
+            text-decoration: none; padding: 8px 12px; border-radius: 6px; color: #333;
+            border: 1px solid #dcdcdc; background: #fff;
+        }
+        .top-nav a.active { background: #eef6ff; border-color: #bcd6ff; color: #0366d6; }
+        .section-header { display: flex; align-items: center; justify-content: space-between; }
+        .bill-items-table th, .bill-items-table td { font-size: 0.95em; }
+        .form-row { display: flex; gap: 16px; flex-wrap: wrap; }
+        .form-group { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 6px; }
+        .btn-secondary, .btn-primary, .btn-danger { cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="top-nav">
+        <a href="index.html"><i class="fas fa-home"></i> मुख्य पृष्ठ</a>
+        <a class="active" href="bills.html"><i class="fas fa-file-invoice-dollar"></i> बिल पृष्ठ</a>
+    </div>
+
+    <main class="app-main" style="padding: 20px;">
+        <div class="section-header">
+            <h2><i class="fas fa-file-invoice-dollar"></i> बिल व्यवस्थापन</h2>
+            <button type="button" id="add-bill-btn" class="btn-secondary">
+                <i class="fas fa-plus"></i> थप बिल थप्नुहोस्
+            </button>
+        </div>
+
+        <div id="bills-container" style="margin-top: 16px;"></div>
+    </main>
+
+    <script>
+        function getBillTitle(index) {
+            return index === 1 ? 'प्रथम विल' :
+                   index === 2 ? 'दोस्रो विल' :
+                   index === 3 ? 'तेस्रो विल' : `बिल ${index}`;
+        }
+
+        function getBillItemRowHTML(item = {}) {
+            return `
+                <tr>
+                    <td class="row-index" style="border: 1px solid #dee2e6; padding: 5px; text-align: center;"></td>
+                    <td style="border: 1px solid #dee2e6; padding: 5px;">
+                        <input type="text" class="bill-item-desc" value="${item.description || ''}" style="width: 100%; border: 1px solid #ced4da; padding: 4px;">
+                    </td>
+                    <td style="border: 1px solid #dee2e6; padding: 5px;">
+                        <input type="text" class="bill-item-unit" value="${item.unit || ''}" style="width: 100%; border: 1px solid #ced4da; padding: 4px;">
+                    </td>
+                    <td style="border: 1px solid #dee2e6; padding: 5px;">
+                        <input type="number" class="bill-item-qty" value="${item.qty || ''}" step="any" style="width: 100%; border: 1px solid #ced4da; padding: 4px;">
+                    </td>
+                    <td style="border: 1px solid #dee2e6; padding: 5px;">
+                        <input type="number" class="bill-item-rate" value="${item.rate || ''}" step="any" style="width: 100%; border: 1px solid #ced4da; padding: 4px;">
+                    </td>
+                    <td style="border: 1px solid #dee2e6; padding: 5px;">
+                        <input type="number" class="bill-item-amount" value="${item.amount || ''}" readonly style="width: 100%; border: 1px solid #ced4da; padding: 4px; background-color: #e9ecef;">
+                    </td>
+                    <td style="border: 1px solid #dee2e6; padding: 5px; text-align: center;">
+                        <button type="button" class="btn-danger remove-row-btn" style="padding: 2px 6px;">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }
+
+        function getBillHTML(index, bill = {}) {
+            const items = bill.items || [{ description: '', unit: '', qty: 0, rate: 0, amount: 0 }];
+
+            let itemsHTML = '';
+            items.forEach(item => { itemsHTML += getBillItemRowHTML(item); });
+
+            return `
+                <div class="bill-item" data-bill-index="${index}" style="margin-bottom: 24px;">
+                    <div class="bill-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h3>${getBillTitle(index)}</h3>
+                        ${index > 1 ? `
+                        <button type="button" class="btn-secondary remove-bill-btn" style="padding: 5px 10px; font-size: 0.9em;">
+                            <i class="fas fa-trash"></i> बिल हटाउनुहोस्
+                        </button>` : ''}
+                    </div>
+
+                    <div class="bill-items-section" style="margin-bottom: 16px; overflow-x: auto;">
+                        <table class="bill-items-table" style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+                            <thead>
+                                <tr style="background-color: #f8f9fa;">
+                                    <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">क्र.सं.</th>
+                                    <th style="border: 1px solid #dee2e6; padding: 8px; text-align: left;">विवरण (Description of Work)</th>
+                                    <th style="border: 1px solid #dee2e6; padding: 8px; width: 80px;">एकाइ</th>
+                                    <th style="border: 1px solid #dee2e6; padding: 8px; width: 100px;">परिमाण</th>
+                                    <th style="border: 1px solid #dee2e6; padding: 8px; width: 120px;">दर</th>
+                                    <th style="border: 1px solid #dee2e6; padding: 8px; width: 150px;">जम्मा रकम</th>
+                                    <th style="border: 1px solid #dee2e6; padding: 8px; width: 50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody class="bill-items-tbody">
+                                ${itemsHTML}
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn-secondary add-bill-row-btn" style="padding: 5px 10px; font-size: 0.9em;">
+                            <i class="fas fa-plus"></i> थप पङ्क्ति
+                        </button>
+                    </div>
+
+                    <div class="bill-summary" style="background-color: #f8f9fa; padding: 15px; border-radius: 5px;">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>(क) कूल जम्मा (Sub-Total)</label>
+                                <input type="number" class="bill-sub-total" value="${bill.subTotal || 0}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>(ख) मूल्य समायोजन (Price Adjustment)</label>
+                                <input type="number" class="bill-price-adjustment" value="${bill.priceAdjustment || 0}">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>(ग) जम्मा (क + ख)</label>
+                                <input type="number" class="bill-total-amount" value="${bill.totalAmount || 0}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>(घ) १३% मू.अ.कर (VAT)</label>
+                                <input type="number" class="bill-vat" value="${bill.vatAmount || 0}" readonly>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>(ङ) कुल बिल रकम (Gross Total Amount)</label>
+                                <input type="number" class="bill-gross-total" value="${bill.grossTotal || 0}" readonly>
+                            </div>
+                        </div>
+
+                        <h4 style="margin: 15px 0 10px;">कट्टीहरू (Deductions)</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>१. ५% रिटेन्सन मनी</label>
+                                <input type="number" class="bill-retention" value="${bill.retentionAmount || 0}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>२. पेश्की फछ्र्यौट (Advance Recovery)</label>
+                                <input type="number" class="bill-advance-recovery" value="${bill.advanceRecovery || 0}">
+                            </div>
+                            <div class="form-group">
+                                <label>३. १.५% अग्रिम आयकर (TDS)</label>
+                                <input type="number" class="bill-tds" value="${bill.tdsAmount || 0}" readonly>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>(च) कुल कट्टी रकम</label>
+                                <input type="number" class="bill-total-deduction" value="${bill.totalDeduction || 0}" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>(छ) खुद भुक्तानी योग्य रकम</label>
+                                <input type="number" class="bill-net-payable" value="${bill.netPayable || 0}" readonly style="font-weight: bold;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateRowIndices(tbody) {
+            Array.from(tbody.children).forEach((row, index) => {
+                row.querySelector('.row-index').textContent = index + 1;
+            });
+        }
+
+        function calculateBillTotals(billElement) {
+            let subTotal = 0;
+            billElement.querySelectorAll('.bill-item-amount').forEach(input => {
+                subTotal += parseFloat(input.value) || 0;
+            });
+            billElement.querySelector('.bill-sub-total').value = subTotal.toFixed(2);
+
+            const priceAdjustment = parseFloat(billElement.querySelector('.bill-price-adjustment').value) || 0;
+            const totalAmount = subTotal + priceAdjustment;
+            billElement.querySelector('.bill-total-amount').value = totalAmount.toFixed(2);
+
+            const vatAmount = totalAmount * 0.13;
+            billElement.querySelector('.bill-vat').value = vatAmount.toFixed(2);
+
+            const grossTotal = totalAmount + vatAmount;
+            billElement.querySelector('.bill-gross-total').value = grossTotal.toFixed(2);
+
+            const retention = grossTotal * 0.05;
+            billElement.querySelector('.bill-retention').value = retention.toFixed(2);
+
+            const tds = grossTotal * 0.015;
+            billElement.querySelector('.bill-tds').value = tds.toFixed(2);
+
+            const advanceRecovery = parseFloat(billElement.querySelector('.bill-advance-recovery').value) || 0;
+            const totalDeduction = retention + tds + advanceRecovery;
+            billElement.querySelector('.bill-total-deduction').value = totalDeduction.toFixed(2);
+
+            const netPayable = grossTotal - totalDeduction;
+            billElement.querySelector('.bill-net-payable').value = netPayable.toFixed(2);
+        }
+
+        function setupBillRowListeners(row, billElement) {
+            const removeBtn = row.querySelector('.remove-row-btn');
+            if (removeBtn) {
+                removeBtn.addEventListener('click', () => {
+                    const tbody = row.parentElement;
+                    row.remove();
+                    updateRowIndices(tbody);
+                    calculateBillTotals(billElement);
+                });
+            }
+
+            const inputs = row.querySelectorAll('.bill-item-qty, .bill-item-rate');
+            inputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    const qty = parseFloat(row.querySelector('.bill-item-qty').value) || 0;
+                    const rate = parseFloat(row.querySelector('.bill-item-rate').value) || 0;
+                    const amount = qty * rate;
+                    row.querySelector('.bill-item-amount').value = amount.toFixed(2);
+                    calculateBillTotals(billElement);
+                });
+            });
+        }
+
+        function setupBillEventListeners(billElement) {
+            const addRowBtn = billElement.querySelector('.add-bill-row-btn');
+            if (addRowBtn) {
+                addRowBtn.addEventListener('click', () => {
+                    const tbody = billElement.querySelector('.bill-items-tbody');
+                    tbody.insertAdjacentHTML('beforeend', getBillItemRowHTML());
+                    updateRowIndices(tbody);
+                    setupBillRowListeners(tbody.lastElementChild, billElement);
+                });
+            }
+
+            const tbody = billElement.querySelector('.bill-items-tbody');
+            if (tbody) {
+                Array.from(tbody.children).forEach(row => setupBillRowListeners(row, billElement));
+                updateRowIndices(tbody);
+            }
+
+            const inputs = billElement.querySelectorAll('.bill-price-adjustment, .bill-advance-recovery');
+            inputs.forEach(input => {
+                input.addEventListener('input', () => calculateBillTotals(billElement));
+            });
+
+            const removeBillBtn = billElement.querySelector('.remove-bill-btn');
+            if (removeBillBtn) {
+                removeBillBtn.addEventListener('click', () => {
+                    billElement.remove();
+                });
+            }
+        }
+
+        function addBillItem() {
+            const billsContainer = document.getElementById('bills-container');
+            const billItems = document.querySelectorAll('.bill-item');
+            const nextIndex = billItems.length + 1;
+
+            const billHTML = getBillHTML(nextIndex);
+            billsContainer.insertAdjacentHTML('beforeend', billHTML);
+            setupBillEventListeners(billsContainer.lastElementChild);
+        }
+
+        // Initialize page with one bill
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('bills-container');
+            container.innerHTML = getBillHTML(1);
+            setupBillEventListeners(container.firstElementChild);
+
+            const addBtn = document.getElementById('add-bill-btn');
+            if (addBtn) addBtn.addEventListener('click', addBillItem);
+        });
+    </script>
+</body>
+</html>
